@@ -1,0 +1,50 @@
+import requests
+from PIL import Image, ImageDraw
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+
+class AnimatedImageGenerator:
+    def __init__(self, api_url):
+        self.api_url = api_url
+
+    def fetch_image_data(self, params):
+        response = requests.get(self.api_url, params=params)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception("Failed to fetch data from API")
+
+    def create_image(self, data):
+        # Create a blank image
+        width, height = 800, 600
+        image = Image.new("RGB", (width, height), "white")
+        draw = ImageDraw.Draw(image)
+
+        # Draw shapes based on data
+        for item in data['shapes']:
+            if item['type'] == 'circle':
+                draw.ellipse([item['x'], item['y'], item['x'] + item['size'], item['y'] + item['size']], fill=item['color'])
+            elif item['type'] == 'rectangle':
+                draw.rectangle([item['x'], item['y'], item['x'] + item['width'], item['y'] + item['height']], fill=item['color'])
+
+        return image
+
+    def generate_animation(self, params, frames=10):
+        images = []
+        for i in range(frames):
+            data = self.fetch_image_data(params)
+            image = self.create_image(data)
+            images.append(image)
+            time.sleep(0.5)  # Delay for animation effect
+
+        # Save as animated GIF
+        images[0].save('animated_image.gif', save_all=True, append_images=images[1:], duration=200, loop=0)
+
+# Example usage
+if __name__ == "__main__":
+    api_url = "https://example.com/api/generate"  # Replace with your custom API URL
+    params = {'param1': 'value1', 'param2': 'value2'}  # Replace with actual parameters
+
+    generator = AnimatedImageGenerator(api_url)
+    generator.generate_animation(params)
